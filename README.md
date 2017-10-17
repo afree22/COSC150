@@ -1,2 +1,2 @@
 # COSC150
-Repository to Share Projects for Advanced Programming
+Repository to keep track of projects for Advanced Programming. Projects are written in Java.
