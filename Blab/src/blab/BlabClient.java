@@ -1,38 +1,63 @@
 package blab;
 
-import java.net.*;
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.PrintWriter;
+import java.net.Socket;
+import java.net.UnknownHostException;
 
-public class BlabClient
-{
-	public static void main(String[] args) throws UnknownHostException
-	{
-		InetAddress inet = InetAddress.getByName(args[0]);
-		int portNum = Integer.parseInt(args[1]);
-		System.out.println("Connecting to host: "+args[0]+" on port: "+ portNum);
-		try
-		{
-			Socket sock = new Socket(inet,portNum);
-			System.out.println("Successfully Connected! - Enter EXIT to exit");
-			while(true)
-			{
-					DataOutputStream dout = new DataOutputStream(sock.getOutputStream());
-					System.out.print("Client: ");
-					
-					BufferedReader bin =new BufferedReader(new InputStreamReader(System.in));
-					String chat = bin.readLine();
-					
-					//create way to exit from the chat
-					if(chat.equals("EXIT")) break;
-					
-					dout.writeUTF(chat);
-					DataInputStream din =new DataInputStream(sock.getInputStream());
-					System.out.println("Server:"+din.readUTF());
+
+public class BlabClient {
+	Socket socket;
+	BufferedReader reader;
+	PrintWriter writer;
+	String nick;
+	int portNum;
+
+	public BlabClient(String host, int port, String nick) throws UnknownHostException, IOException {
+		socket = new Socket(host, port);
+		reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+		this.nick = nick;
+		portNum = port;
+
+		new Thread(new Runnable() {
+			public void run() {
+				String intext = "";
+				try {
+					while ((intext = reader.readLine()) != null) {
+						if(intext.contains("/EXIT")){
+							System.exit(-1);
+						}
+						System.out.println(intext);
+					}
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
 			}
-		}
-		catch(IOException e)
-		{
-			e.printStackTrace();
-		}
+		}).start();
+
+		new Thread(new Runnable() {
+			public void run() {
+				String intext = "";
+				PrintWriter w = null;
+				BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
+				try {
+					w = new PrintWriter(socket.getOutputStream(), true);
+				} catch (IOException e1) {
+					e1.printStackTrace();
+				}
+				try {
+					while ((intext = reader.readLine()) != null) {
+						if (intext.trim().isEmpty()) {
+							continue;}
+						w.println(nick + ": " + intext);
+					}
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			}
+		}).start();
+
 	}
 }
